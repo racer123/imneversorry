@@ -20,6 +20,7 @@ class Teekkari:
             'kalanimi': self.getKalanimi,
             'addsikulla': self.banHammer,
             'sotanimi': self.getSotanimi,
+            'kaariku': self.getKariku,
         }
         self.vituttaaUrl = 'https://fi.wikipedia.org/wiki/Toiminnot:Satunnainen_sivu'
         self.urbaaniUrl = 'https://urbaanisanakirja.com/random/'
@@ -119,6 +120,11 @@ class Teekkari:
         meaning = meaning[meaning.find('.')+2:]
         return meaning
 
+    def getKariku(self, word):
+        webpage = urllib.request.urlopen(self.urbaaniWordUrl + word + '/').read().decode("utf-8")
+        user = str(webpage).split('<a href="/user/" content="')[1].split('">')[0]
+        return user
+    
     def getSlango(self):
         r = requests.get(self.slangopediaUrl)
         url = urllib.parse.unquote_plus(r.url, encoding='ISO-8859-1').split('/')
