@@ -20,7 +20,7 @@ class Teekkari:
             'kalanimi': self.getKalanimi,
             'addsikulla': self.banHammer,
             'sotanimi': self.getSotanimi,
-            'kaariku': self.getKariku,
+            'kariku': self.getKariku,
         }
         self.vituttaaUrl = 'https://fi.wikipedia.org/wiki/Toiminnot:Satunnainen_sivu'
         self.urbaaniUrl = 'https://urbaanisanakirja.com/random/'
@@ -182,6 +182,8 @@ class Teekkari:
                 self.getVitun(bot, update)
             elif re.match(r'^mikä vitun ', msg.text.lower()):
                 self.getVitunSelitys(bot, update)
+            elif re.match(r'^karikutarkistus ', msg.text.lower()):
+                self.getKariku(bot, update)
             elif re.match(r'^helveten', msg.text.lower()):
                 self.getHelveten(bot, update)
             elif re.match(r'^/maitonimi', msg.text.lower()):
