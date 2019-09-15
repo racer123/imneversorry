@@ -14,6 +14,7 @@ class Teekkari:
     def __init__(self):
         self.commands = {
             'vituttaa': self.getVitutus,
+            'pilalla': self.getPilalla,
             'viisaus': self.getViisaus,
             'hakemus': self.handleHakemus,
             'pekkauotila': self.getVittuilu,
@@ -70,6 +71,12 @@ class Teekkari:
         r = requests.get(self.vituttaaUrl)
         url = urllib.parse.unquote_plus(r.url).split('/')
         vitutus = url[len(url)-1].replace('_', ' ') + " vituttaa"
+        bot.sendMessage(chat_id=update.message.chat_id, text=vitutus)
+        
+    def getPilalla(self, bot, update, args=''):
+        r = requests.get(self.vituttaaUrl)
+        url = urllib.parse.unquote_plus(r.url).split('/')
+        vitutus = url[len(url)-1].replace('_', ' ') + " on pilalla"
         bot.sendMessage(chat_id=update.message.chat_id, text=vitutus)
 
     def getDiagnoosi(self, bot, update, args=''):
@@ -229,6 +236,8 @@ class Teekkari:
         if msg.text is not None:
             if 'vituttaa' in msg.text.lower():
                 self.getVitutus(bot, update)
+            elif 'pilalla' in msg.text.lower():
+                self.getPilalla(bot, update)
             elif 'viisaus' in msg.text.lower():
                 self.getViisaus(bot, update)
             elif 'pekkauotila' in msg.text.lower():
