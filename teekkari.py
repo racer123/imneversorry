@@ -75,10 +75,13 @@ class Teekkari:
         bot.sendMessage(chat_id=update.message.chat_id, text=vitutus)
         
     def getPilalla(self, bot, update, args=''):
-        r = requests.get(self.vituttaaUrl)
-        url = urllib.parse.unquote_plus(r.url).split('/')
-        vitutus = url[len(url)-1].replace('_', ' ') + " on pilalla"
-        bot.sendMessage(chat_id=update.message.chat_id, text=vitutus)
+        if random.randint(0, 9) == 0:
+            bot.sendMessage(chat_id=update.message.chat_id, text="Pelkkää paskaa tilalla.")
+        else:
+            r = requests.get(self.vituttaaUrl)
+            url = urllib.parse.unquote_plus(r.url).split('/')
+            vitutus = url[len(url)-1].replace('_', ' ') + " on pilalla"
+            bot.sendMessage(chat_id=update.message.chat_id, text=vitutus)
 
     def getDiagnoosi(self, bot, update, args=''):
         bot.sendMessage(chat_id=update.message.chat_id, text=random.sample(self.diagnoosit, 1)[0][0])
