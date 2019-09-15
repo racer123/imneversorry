@@ -5,6 +5,10 @@ import re
 import db
 import time
 import datetime
+import json
+import hashlib
+import emoji
+from emoji import unicode_codes
 
 class Teekkari:
     def __init__(self):
@@ -26,6 +30,7 @@ class Teekkari:
         self.urbaaniUrl = 'https://urbaanisanakirja.com/random/'
         self.urbaaniWordUrl = 'https://urbaanisanakirja.com/word/'
         self.slangopediaUrl = 'http://www.slangopedia.se/slumpa/'
+        self.uutineUrl = 'https://www.is.fi/tuoreimmat/'
         self.viisaudet = db.readViisaudet()
         self.sanat = db.readSanat()
         self.diagnoosit = db.readDiagnoosit()
@@ -38,7 +43,11 @@ class Teekkari:
         self.linnut = db.readLinnut()
         self.sotilasarvot = db.readSotilasarvot()
         self.sotilasnimet = db.readSotilasnimet()
-        self.lastVitun = 0
+        self.ennustukset = db.readEnnustukset()
+        self.lastVitun = {}
+        self.nextUutine = 0
+        self.lastUutineUpdate = 0
+        self.uutineet = [ [], [] ]
 
     def getCommands(self):
         return self.commands
@@ -51,9 +60,9 @@ class Teekkari:
 
     def handleHakemus(self, bot, update, args=''):
         if random.randint(0, 9) == 0:
-            bot.sendMessage(chat_id=update.message.chat_id, text='hyy-vä')
+            bot.sendSticker(chat_id=update.message.chat_id, sticker='CAADBAADJgADiR7LDbglwFauETpzFgQ')
         else:
-            bot.sendMessage(chat_id=update.message.chat_id, text='tapan sut')
+            bot.sendSticker(chat_id=update.message.chat_id, sticker='CAADBAADPwADiR7LDV1aPNns0V1YFgQ')
 
     def getViisaus(self, bot, update, args=''):
         bot.sendMessage(chat_id=update.message.chat_id, text=random.sample(self.viisaudet, 1)[0][0])
@@ -131,9 +140,13 @@ class Teekkari:
         return str(url[-1].split('=')[-1].lower())
 
     def getVitun(self, bot, update, args=''):
-        now = time.time()
-        if self.lastVitun + 60 < now:
-            self.lastVitun = now
+        now = datetime.datetime.now().date()
+        userId = update.message.from_user.id
+        if userId not in self.lastVitun:
+            self.lastVitun[userId] = now
+            bot.sendMessage(chat_id=update.message.chat_id, text=self.getUrbaani().capitalize() + " vitun " + self.getUrbaani())
+        elif self.lastVitun[userId] != now:
+            self.lastVitun[userId] = now
             bot.sendMessage(chat_id=update.message.chat_id, text=self.getUrbaani().capitalize() + " vitun " + self.getUrbaani())
 
     def getVitunSelitys(self, bot, update, args=''):
@@ -155,6 +168,55 @@ class Teekkari:
                     bot.sendMessage(chat_id=update.message.chat_id, text='ai ' + word.replace('tek', 'TEK') + ' xD')
                     return
 
+    def getEnnustus(self, bot, update, args=''):
+        now = datetime.datetime.now()
+        data = [
+            update.message.from_user.id,
+            now.day,
+            now.month,
+            now.year
+        ]
+        seed = hashlib.md5(json.dumps(data, sort_keys=True).encode('utf-8')).hexdigest()
+        rigged = random.Random(seed)
+        ennustus = ""
+        n = rigged.randint(0, 2)
+        for x in range(n):
+            r = rigged.choice(tuple(unicode_codes.EMOJI_UNICODE))
+            ennustus += emoji.emojize(r)
+        n = rigged.randint(1, 4)
+        for x in range(n):
+            ennustus += rigged.sample(self.ennustukset, 1)[0][0]+". "
+            m = rigged.randint(0, 2)
+            for x in range(m):
+                r = rigged.choice(tuple(unicode_codes.EMOJI_UNICODE))
+                ennustus += emoji.emojize(r)
+        ennustus = ennustus.replace('?.', '.')
+        n = rigged.randint(1, 3)
+        for x in range(n):
+            r = rigged.choice(tuple(unicode_codes.EMOJI_UNICODE))
+            ennustus += emoji.emojize(r)
+        bot.sendMessage(chat_id=update.message.chat_id, text=ennustus)
+
+    def getUutine(self, bot, update, args=''):
+        now = time.time()
+        if self.lastUutineUpdate + 3600 < now:
+            self.lastUutineUpdate = now
+            webpage = urllib.request.urlopen(self.uutineUrl).read().decode("utf-8")
+            uutine = str(webpage)
+            self.uutineet = [ [], [] ]
+            for otsikko in uutine.split('<li class="list-item">'):
+                otsikko = otsikko.replace('\n', '').replace('\r', '')
+                if '<div class="content">' in otsikko:
+                    otsikko = otsikko.split('<div class="content">')[1].split('</div>')[0]
+                    if ' – ' in otsikko:
+                        otsikko = otsikko.split(' – ')
+                        self.uutineet[0].append(otsikko[0])
+                        self.uutineet[1].append(otsikko[1])
+        if self.nextUutine < now:
+            self.nextUutine = now + random.randint(10, 120)
+            uutine = random.choice(self.uutineet[0]) + ' – ' + random.choice(self.uutineet[1])
+            bot.sendMessage(chat_id=update.message.chat_id, text=uutine)
+
     def banHammer(self, bot, update, args=''):
         duration = datetime.datetime.now() + datetime.timedelta(minutes=1)
         print(duration)
@@ -174,6 +236,10 @@ class Teekkari:
                 self.handleHakemus(bot, update)
             elif 'diagno' in msg.text.lower():
                 self.getDiagnoosi(bot, update)
+            elif 'horoskoop' in msg.text.lower():
+                self.getEnnustus(bot, update)
+            elif 'uutine' in msg.text.lower():
+                self.getUutine(bot, update)
             elif re.match(r'^halo', msg.text.lower()):
                 self.getHalo(bot, update)
             elif re.match(r'^noppa', msg.text.lower()):
